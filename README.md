@@ -48,16 +48,12 @@ ServerSetupSkill/
 │   ├── macos-home-server.md
 │   ├── linux-home-server.md       # the lurch pattern
 │   └── lessons-learned.md         # dated incidents behind every rule
-├── templates/                     # configs, units, setup-log, and cf-hostname.sh / oci-seclist.sh / with-secrets.sh
-└── Lurch/                         # the ORIGINAL June 2026 skill + lurch log (history; see note)
+└── templates/                     # configs, units, setup-log, and cf-hostname.sh / oci-seclist.sh / with-secrets.sh
 ```
 
 ## Using it
-- Copy the folder to `~/.claude/skills/oracle-server-setup/`
-  on the operator's Mac.
+- Clone it into `~/.claude/skills/oracle-server-setup/` on the operator's Mac:
+  `git clone https://github.com/mjanssen19/oracle-server-setup.git ~/.claude/skills/oracle-server-setup`
+  (update later with `git -C ~/.claude/skills/oracle-server-setup pull`).
 - Then ask: "set up my new Oracle server".
 - It also reads as a plain runbook, starting at `SKILL.md`.
-
-> `Lurch/` is the original June 2026 skill plus lurch's log, kept for history. The
-> keys, account ID and IPs in it are redacted. Everything useful from it is now in
-> `reference/linux-home-server.md` and `reference/lessons-learned.md`.
