@@ -1,0 +1,14 @@
+# /etc/systemd/system/docker-firewall.service: re-applies the DOCKER-USER rules each time Docker starts
+[Unit]
+Description=DOCKER-USER firewall rules
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/docker-firewall.sh
+
+[Install]
+WantedBy=docker.service

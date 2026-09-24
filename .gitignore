@@ -1,0 +1,13 @@
+# Local history of the original June 2026 skill (redacted, but not part of the skill)
+Lurch/
+# macOS / editor noise
+.DS_Store
+*.swp
+# Never commit secrets or live data by accident
+*.env
+*.pem
+*.key
+*.kdbx
+*.keyx
+*.map
+!templates/*.map.example

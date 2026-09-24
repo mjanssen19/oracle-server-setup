@@ -1,0 +1,11 @@
+# /etc/systemd/system/nightly-patch.service
+[Unit]
+Description=Nightly OS patching (update + upgrade + reboot if required)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/nightly-patch.sh
+# the reboot happens inside the script; don't let systemd kill it mid-apt
+TimeoutStartSec=2h

@@ -1,0 +1,12 @@
+# /etc/systemd/system/restic-backup.service
+[Unit]
+Description=restic backup to offsite (R2)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/restic-backup.sh
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=4h

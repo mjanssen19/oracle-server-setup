@@ -1,0 +1,11 @@
+# /etc/systemd/system/restic-backup.timer: 02:00 UTC, well before nightly-patch (04:00) can reboot
+[Unit]
+Description=Daily restic backup
+
+[Timer]
+OnCalendar=*-*-* 02:00:00 UTC
+RandomizedDelaySec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

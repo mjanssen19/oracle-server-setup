@@ -1,0 +1,21 @@
+# /etc/fail2ban/jail.local — only useful if a public auth surface reaches the host directly.
+# It cannot see Tailscale SSH logins (those go through tailscaled) and cannot ban
+# Cloudflare Tunnel visitors (they all arrive from 127.0.0.1). Never edit jail.conf.
+
+[DEFAULT]
+bantime  = 1h
+findtime = 10m
+maxretry = 5
+# repeat offenders: 1h, 2h, 4h ... up to maxtime
+bantime.increment = true
+bantime.factor    = 2
+bantime.maxtime   = 1w
+banaction          = nftables
+banaction_allports = nftables[type=allports]
+# loopback, Oracle metadata, tailnet (you can't lock yourself out over Tailscale)
+ignoreip = 127.0.0.1/8 ::1 169.254.0.0/16 100.64.0.0/10
+
+[sshd]
+enabled  = true
+backend  = systemd
+maxretry = 3

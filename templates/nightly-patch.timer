@@ -1,0 +1,14 @@
+# /etc/systemd/system/nightly-patch.timer
+# 04:00 UTC: after the 02:00 backup, before people wake up (NL = 05:00/06:00).
+# Pick a minute that NO other job uses: a reboot kills whatever runs at that moment,
+# and it does so exactly on the nights a kernel shipped.
+[Unit]
+Description=Nightly OS patching
+
+[Timer]
+OnCalendar=*-*-* 04:00:00 UTC
+RandomizedDelaySec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

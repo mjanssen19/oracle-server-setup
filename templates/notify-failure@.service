@@ -1,0 +1,13 @@
+# /etc/systemd/system/notify-failure@.service
+# Push a notification when any unit fails. Attach it to a job without editing the job's script:
+#   /etc/systemd/system/<job>.service.d/10-notify.conf
+#     [Unit]
+#     OnFailure=notify-failure@%n.service
+# Needs /usr/local/sbin/notify.sh and /etc/server-notify.env (templates/notify.sh).
+# Test: sudo systemd-run --unit=notify-test -p OnFailure=notify-failure@%n.service /bin/false
+[Unit]
+Description=Notify about failed unit %i
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c '/usr/local/sbin/notify.sh "%i FAILED on $(hostname). Last lines: $(journalctl -u %i -n 5 --no-pager -o cat | tail -c 600)"'
