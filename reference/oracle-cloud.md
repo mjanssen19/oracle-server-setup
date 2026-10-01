@@ -137,8 +137,27 @@ Compute → Instances → **Create instance**:
   - Optionally, a cloud-init script is fine but not needed.
 - **Advanced → Oracle Cloud Agent:** keep *Compute Instance Monitoring*. Turn
   off plugins you won't use (Vulnerability Scanning, OS Management Hub, Bastion,
-  Block Volume Management, Management Agent) unless wanted. Each one is code
-  running as root with broad sudoers rules (`/etc/sudoers.d/*oracle-cloud-agent*`).
+  Block Volume Management, Management Agent) unless wanted. Each one gets its
+  own root rights through `/etc/sudoers.d/*oracle-cloud-agent*` (narrow helper
+  programs from 1.64 on, broad `apt`/`systemctl`/`rm` before that).
+
+  What the plugins seen on the reference servers do (alfred, bobaserver and
+  numbersgamearm01, checked 2026-10-01 with `ps` and
+  `/var/log/oracle-cloud-agent/plugins/`). All three run the same set; only
+  bobaserver adds Vulnerability Scanning:
+
+  | Plugin (process) | What it does | Memory |
+  |---|---|---|
+  | core (`agent`, `updater`) | talks to Oracle, starts plugins, updates itself (holds the snap, see `lessons-learned.md`) | ~38 MB |
+  | Compute Instance Monitoring (`gomon`) | CPU, memory, disk and network graphs on the instance page; useful when the box is unreachable | ~21 MB |
+  | Compute Instance Run Command (`runcommand`) | runs Console-submitted scripts as the `ocarun` user (2.6 d) | ~22 MB |
+  | Custom Logs Monitoring (`unifiedmonitoring`) | ships log files to OCI Logging through the `unified-monitoring-agent` deb (fluentd); that deb shows as "obsolete" in apt, keep it | ~105 MB |
+  | `oci-wlp` | probably Cloud Guard Workload Protection (rights to `apt`, `gpg`, `systemctl`); not verified | ~24 MB |
+  | Vulnerability Scanning (`oci-vulnerabilityscan`), bobaserver only | scans installed packages for known CVEs and reports to OCI Vulnerability Scanning (sudoers includes a Qualys agent wrapper) | ~20 MB |
+
+  **Owner decision, 2026-10-01:** the reference servers keep the agent and
+  these plugins as they are (~210 MB per server, ~230 MB on bobaserver). For a new server the advice
+  above still applies: switch off what nobody will use.
 
 The CLI equivalent for IMDS on an existing instance:
 
@@ -235,15 +254,17 @@ disk.
 
 ### d. Run Command: optional, commands without any login
 - The Oracle Cloud Agent's **Compute Instance Run Command** plugin runs a
-  script as root from the Console (Instance → Run command). It needs:
+  script from the Console (Instance → Run command) as the `ocarun` user, not
+  root (seen on alfred, 2026-10-01). Root needs an extra sudoers rule for
+  `ocarun`; add one only if the owner wants it. It needs:
   - the plugin enabled
   - a dynamic group containing the instance
   - an IAM policy along the lines of
     `allow dynamic-group <dg> to use instance-agent-command-execution-family in compartment <c>`
 - Useful for a one-line fix, e.g. `systemctl restart tailscaled` or reverting
   an sshd drop-in, without a password on the serial console.
-- It is another way to run root commands. Enable it only if the owner wants
-  it, and write it down.
+- It is another way to run commands on the box, open to anyone with that IAM
+  permission. Enable it only if the owner wants it, and write it down.
 
 ### e. Last resort: restore the disk
 Restore the latest boot volume backup into a new instance
@@ -257,6 +278,14 @@ upgrade:
 1. Take a manual boot volume backup.
 2. Confirm the serial console works.
 3. Run the upgrade inside `tmux`.
+
+After the upgrade (details in `lessons-learned.md`, "Ubuntu 26.04 release upgrade"):
+1. Re-enable the third-party repos as `.sources` on the new codename, then
+   `apt update` and review `apt list --upgradable`.
+2. Only then review `apt list '?obsolete'`; keep vendor and Oracle packages.
+3. On 26.04 (sudo-rs): `oracle-cloud-agent` must be 1.64 or newer, or sudo-rs
+   warns about its sudoers on every `sudo` and skips the bad lines:
+   `sudo snap refresh oracle-cloud-agent --channel=1.64.x/stable`.
 
 ---
 

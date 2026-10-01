@@ -82,4 +82,16 @@ fussy, this is why. Audit dates: 2026-09-23.
 | OCI A1 | no swap on the image | 4 GB swapfile |
 | alfred | disk from 42 GB to 81% of 96 GB (Docker, runners, agent tooling) | 150–200 GB boot volume; alert at 80% |
 | alfred | Docker containers' internal UID 999 collided with a host user in `ps` | map by container, not UID, when auditing |
-| OCI | `oracle-cloud-agent` snap brings broad NOPASSWD sudoers for `snap_daemon` | enable only the plugins you use |
+| OCI | `oracle-cloud-agent` snap brings broad NOPASSWD sudoers for `snap_daemon` | enable only the plugins you use; 1.64+ narrows the rules to helper programs |
+| owner decision, 2026-10-01 | reviewed the running plugins on alfred, bobaserver and numbersgamearm01 (Monitoring, Run Command, Custom Logs, `oci-wlp`, plus Vulnerability Scanning on bobaserver; ~210–230 MB) and chose to keep them all | a deliberate keep, written down; see `oracle-cloud.md` plugin table |
+| alfred, numbersgamearm01, 2026-09-29 | the agent lagged for months (alfred 1.48 from March 2025, numbersgamearm01 1.58 from May 2026) (bobaserver only reached 1.63 through its 26.04 release upgrade). Its own updater holds the snap (`hold: forever`) and only installs what Oracle's control plane offers; the logs show `LatestPackage=<nil>` / `No new package`. It is a staged rollout, not a local fault | check `snap list oracle-cloud-agent` in every audit; refresh by hand when it lags |
+
+## Ubuntu 26.04 release upgrade
+| Where | What happened | Rule |
+|---|---|---|
+| alfred, 2026-09-29 | 26.04 ships **sudo-rs** as `sudo`. It rejects the agent's sudoers (wildcard args, `requiretty`) up to 1.63: warnings on every `sudo`. sudo-rs skips only the bad lines (`sudo -l -U snap_daemon` on bobaserver still listed the rest), so this is noise plus a few lost multipath/monitoring rules, not a stuck agent | keep sudo-rs (owner choice: safer); `snap refresh oracle-cloud-agent --channel=1.64.x/stable` (done on alfred, bobaserver, and numbersgamearm01 on 24.04 for the narrower rules, 2026-10-01). 1.64 parses clean and its rules are far narrower (helpers, exact commands). Don't switch back to `sudo.ws` to hide it |
+| alfred, 2026-09-29 | `do-release-upgrade` disabled every third-party repo (Docker, Tailscale, cloudflared, 1Password, Syncthing, NodeSource) with no error; the software kept running but got no updates, Docker stayed on `noble` builds | after the upgrade: rewrite them as deb822 `.sources` (Docker/Tailscale suite → new codename), `apt update`, check `apt list --upgradable` |
+| alfred, 2026-09-29 | Ubuntu ESM's `syncthing` (priority 510) outranked apt.syncthing.net and replaced the upstream package | pin the vendor origin (`/etc/apt/preferences.d/syncthing`, 990) |
+| alfred, 2026-09-29 | ~30 "obsolete" packages afterwards: old-release libs, but also Docker, cloudflared and 1password-cli (only because their repos were off) and Oracle's `unified-monitoring-agent` | fix repos **first**, then `apt list '?obsolete'`; remove only old-release libs, keep vendor and Oracle packages |
+| alfred, 2026-09-29 | the installer asked about `50unattended-upgrades`; keeping the local version was right (new default only comments out `-updates`) | diff against `.ucf-dist` instead of guessing |
+| alfred, 2026-09-29 | the self-hosted runners' user services failed once at first boot, then came up on restart | look at the journal before chasing a "failed" unit; `systemctl --failed` may already be clean |
